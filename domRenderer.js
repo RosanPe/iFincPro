@@ -242,7 +242,8 @@ class DomRenderer {
    */
   renderExpensesTable(store) {
     const tbody = document.getElementById('table-expenses-body');
-    if (!tbody) return;
+    const mobileList = document.getElementById('mobile-expenses-list');
+    if (!tbody && !mobileList) return;
 
     // Get filter inputs
     const query = (document.getElementById('filtro-gasto-busca')?.value || '').toLowerCase();
@@ -266,55 +267,120 @@ class DomRenderer {
       return matchesSearch && matchesCategory && matchesMethod && matchesCard;
     });
 
-    tbody.innerHTML = '';
+    if (tbody) {
+      tbody.innerHTML = '';
+      if (expenses.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center text-slate-400">
+              Nenhuma despesa cadastrada ou encontrada para os filtros aplicados.
+            </td>
+          </tr>
+        `;
+      } else {
+        for (const exp of expenses) {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slateBorder/30 hover:bg-panel/50 transition-colors duration-150';
 
-    if (expenses.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="px-6 py-12 text-center text-slate-400">
-            Nenhuma despesa cadastrada ou encontrada para os filtros aplicados.
-          </td>
-        </tr>
-      `;
-      return;
+          const cardName = exp.cardId ? (cardMap.get(exp.cardId)?.name || 'Cartão Desconhecido') : '-';
+          const installmentsStr = exp.method === 'Card' ? `${exp.installments}x` : '1x (À vista)';
+          const loanBadge = exp.isLoan 
+            ? '<span class="ml-2 px-2 py-0.5 text-[10px] font-medium rounded-full bg-cyanAcc/15 text-cyanAcc border border-cyanAcc/20">Empréstimo</span>'
+            : '';
+
+          tr.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${formatDateBR(exp.date)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-100 font-semibold">
+              <div class="flex items-center">
+                ${exp.description}
+                ${loanBadge}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slateBorder/50 text-slate-300 border border-slateBorder">
+                ${exp.category}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+              ${exp.method === 'Card' ? 'Crédito' : 'Pix/Débito'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${cardName}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${installmentsStr}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-jade font-semibold font-mono">${formatCurrency(exp.value)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button class="btn-edit-expense text-cyanAcc hover:text-cyanAcc/80 transition-colors mr-3" data-id="${exp.id}">Editar</button>
+              <button class="btn-delete-expense text-accentPink hover:text-accentPink/80 transition-colors" data-id="${exp.id}">Excluir</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      }
     }
 
-    for (const exp of expenses) {
-      const tr = document.createElement('tr');
-      tr.className = 'border-b border-slateBorder/30 hover:bg-panel/50 transition-colors duration-150';
-
-      const cardName = exp.cardId ? (cardMap.get(exp.cardId)?.name || 'Cartão Desconhecido') : '-';
-      const installmentsStr = exp.method === 'Card' ? `${exp.installments}x` : '1x (À vista)';
-      const loanBadge = exp.isLoan 
-        ? '<span class="ml-2 px-2 py-0.5 text-[10px] font-medium rounded-full bg-cyanAcc/15 text-cyanAcc border border-cyanAcc/20">Empréstimo</span>'
-        : '';
-
-      tr.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${formatDateBR(exp.date)}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-100 font-semibold">
-          <div class="flex items-center">
-            ${exp.description}
-            ${loanBadge}
+    if (mobileList) {
+      mobileList.innerHTML = '';
+      if (expenses.length === 0) {
+        mobileList.innerHTML = `
+          <div class="text-center text-slate-400 py-8 text-sm">
+            Nenhuma despesa cadastrada ou encontrada para os filtros aplicados.
           </div>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-          <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-slateBorder/50 text-slate-300 border border-slateBorder">
-            ${exp.category}
-          </span>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
-          ${exp.method === 'Card' ? 'Crédito' : 'Pix/Débito'}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${cardName}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${installmentsStr}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-jade font-semibold font-mono">${formatCurrency(exp.value)}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button class="btn-edit-expense text-cyanAcc hover:text-cyanAcc/80 transition-colors mr-3" data-id="${exp.id}">Editar</button>
-          <button class="btn-delete-expense text-accentPink hover:text-accentPink/80 transition-colors" data-id="${exp.id}">Excluir</button>
-        </td>
-      `;
+        `;
+      } else {
+        for (const exp of expenses) {
+          const cardName = exp.cardId ? (cardMap.get(exp.cardId)?.name || 'Cartão Desconhecido') : '';
+          const installmentsStr = exp.method === 'Card' ? `${exp.installments}x` : '';
+          const methodIcon = exp.method === 'Card' 
+            ? '<i class="fa-solid fa-credit-card text-accentIndigo mr-1.5"></i>' 
+            : '<i class="fa-solid fa-wallet text-jade mr-1.5"></i>';
+          const methodLabel = exp.method === 'Card' ? 'Crédito' : 'Pix/Débito';
+          
+          const detailsParts = [];
+          if (exp.method === 'Card') {
+            detailsParts.push(`${installmentsStr} no ${cardName}`);
+          } else {
+            detailsParts.push(methodLabel);
+          }
+          
+          const loanBadge = exp.isLoan 
+            ? '<span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-cyanAcc/15 text-cyanAcc border border-cyanAcc/20">Empréstimo</span>'
+            : '';
 
-      tbody.appendChild(tr);
+          const cardDiv = document.createElement('div');
+          cardDiv.className = 'bg-panel border border-slateBorder/50 p-4 rounded-xl shadow-md space-y-3';
+          cardDiv.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-slate-100 flex items-center gap-1.5 text-sm sm:text-base">
+                  ${exp.description}
+                  ${loanBadge}
+                </h4>
+                <div class="text-xs text-slate-400 mt-1 flex items-center">
+                  ${methodIcon} ${detailsParts.join(' • ')}
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-jade font-bold font-mono text-sm sm:text-base">${formatCurrency(exp.value)}</span>
+                <div class="text-[10px] text-slate-500 font-mono mt-0.5">${formatDateBR(exp.date)}</div>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center pt-2 border-t border-slateBorder/20">
+              <span class="px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-slateBorder/50 text-slate-300 border border-slateBorder">
+                ${exp.category}
+              </span>
+              <div class="flex gap-4">
+                <button class="btn-edit-expense text-xs font-semibold text-cyanAcc hover:text-cyanAcc/80 py-1 px-2.5 -m-1" data-id="${exp.id}">
+                  <i class="fa-solid fa-pen-to-square mr-1"></i> Editar
+                </button>
+                <button class="btn-delete-expense text-xs font-semibold text-accentPink hover:text-accentPink/80 py-1 px-2.5 -m-1" data-id="${exp.id}">
+                  <i class="fa-solid fa-trash mr-1"></i> Excluir
+                </button>
+              </div>
+            </div>
+          `;
+          mobileList.appendChild(cardDiv);
+        }
+      }
     }
   }
 
@@ -323,7 +389,8 @@ class DomRenderer {
    */
   renderInvestmentsTable(store) {
     const tbody = document.getElementById('table-investments-body');
-    if (!tbody) return;
+    const mobileList = document.getElementById('mobile-investments-list');
+    if (!tbody && !mobileList) return;
 
     const query = (document.getElementById('filtro-investimento-busca')?.value || '').toLowerCase();
 
@@ -334,72 +401,137 @@ class DomRenderer {
       summaries = summaries.filter(s => s.asset.toLowerCase().includes(query));
     }
 
-    tbody.innerHTML = '';
+    if (tbody) {
+      tbody.innerHTML = '';
+      if (summaries.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="px-6 py-12 text-center text-slate-400">
+              Nenhum investimento registrado ou encontrado.
+            </td>
+          </tr>
+        `;
+      } else {
+        for (const asset of summaries) {
+          // Create asset group summary row
+          const trSummary = document.createElement('tr');
+          trSummary.className = 'bg-panel/30 border-b border-slateBorder/30 font-semibold';
 
-    if (summaries.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" class="px-6 py-12 text-center text-slate-400">
-            Nenhum investimento registrado ou encontrado.
-          </td>
-        </tr>
-      `;
-      return;
+          trSummary.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-cyanAcc font-bold">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-coins text-accentAmber"></i>
+                <span>${asset.asset}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${asset.totalQuantity.toLocaleString('pt-BR')}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${formatCurrency(asset.averagePrice)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-jade font-mono">${formatCurrency(asset.totalCost)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button class="btn-expand-history text-slate-400 hover:text-slate-100 transition-colors text-xs border border-slateBorder rounded px-2 py-1 mr-2" data-asset="${asset.asset}">Detalhes</button>
+            </td>
+          `;
+          tbody.appendChild(trSummary);
+
+          // Detail history row (collapsible container)
+          const trHistory = document.createElement('tr');
+          trHistory.id = `history-row-${asset.asset}`;
+          trHistory.className = 'hidden bg-slateBorder/10 border-b border-slateBorder/30';
+          
+          const historyRowsHtml = asset.history.map(inv => `
+            <tr class="text-xs border-b border-slateBorder/20">
+              <td class="pl-12 py-2 text-slate-400 font-mono">${formatDateBR(inv.date)}</td>
+              <td class="py-2 text-slate-400 font-mono">${inv.quantity.toLocaleString('pt-BR')}</td>
+              <td class="py-2 text-slate-400 font-mono">${formatCurrency(inv.price)}</td>
+              <td class="py-2 text-slate-400 font-mono">${formatCurrency(inv.total)}</td>
+              <td class="pr-6 py-2 text-right">
+                <button class="btn-edit-investment text-cyanAcc hover:underline mr-3" data-id="${inv.id}">Editar</button>
+                <button class="btn-delete-investment text-accentPink hover:underline" data-id="${inv.id}">Excluir</button>
+              </td>
+            </tr>
+          `).join('');
+
+          trHistory.innerHTML = `
+            <td colspan="5" class="p-0">
+              <table class="w-full">
+                <thead>
+                  <tr class="text-left border-b border-slateBorder text-[10px] text-slate-400 uppercase tracking-wider bg-panel/60">
+                    <th class="pl-12 py-2 font-medium">Data da Operação</th>
+                    <th class="py-2 font-medium">Quantidade</th>
+                    <th class="py-2 font-medium">Preço da Compra</th>
+                    <th class="py-2 font-medium">Valor Total</th>
+                    <th class="pr-6 py-2 text-right font-medium">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${historyRowsHtml}
+                </tbody>
+              </table>
+            </td>
+          `;
+          tbody.appendChild(trHistory);
+        }
+      }
     }
 
-    for (const asset of summaries) {
-      // Create asset group summary row
-      const trSummary = document.createElement('tr');
-      trSummary.className = 'bg-panel/30 border-b border-slateBorder/30 font-semibold';
+    if (mobileList) {
+      mobileList.innerHTML = '';
+      if (summaries.length === 0) {
+        mobileList.innerHTML = `
+          <div class="text-center text-slate-400 py-8 text-sm">
+            Nenhum investimento registrado ou encontrado.
+          </div>
+        `;
+      } else {
+        for (const asset of summaries) {
+          const cardDiv = document.createElement('div');
+          cardDiv.className = 'bg-panel border border-slateBorder/50 p-4 rounded-xl shadow-md space-y-3';
+          
+          const historyHtml = asset.history.map(inv => `
+            <div class="bg-obsidian/40 border border-slateBorder/20 rounded-lg p-2.5 flex justify-between items-center text-xs">
+              <div class="space-y-1">
+                <div class="text-slate-400 font-mono">${formatDateBR(inv.date)}</div>
+                <div class="text-slate-300 font-mono">Qtd: ${inv.quantity.toLocaleString('pt-BR')} • PM: ${formatCurrency(inv.price)}</div>
+              </div>
+              <div class="text-right space-y-1.5">
+                <div class="text-jade font-semibold font-mono">${formatCurrency(inv.total)}</div>
+                <div class="flex gap-3 justify-end">
+                  <button class="btn-edit-investment text-[11px] font-semibold text-cyanAcc hover:underline -m-1 p-1" data-id="${inv.id}">Editar</button>
+                  <button class="btn-delete-investment text-[11px] font-semibold text-accentPink hover:underline -m-1 p-1" data-id="${inv.id}">Excluir</button>
+                </div>
+              </div>
+            </div>
+          `).join('');
 
-      trSummary.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-cyanAcc font-bold">${asset.asset}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${asset.totalQuantity.toLocaleString('pt-BR')}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">${formatCurrency(asset.averagePrice)}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-jade font-mono">${formatCurrency(asset.totalCost)}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-          <button class="btn-expand-history text-slate-400 hover:text-slate-100 transition-colors text-xs border border-slateBorder rounded px-2 py-1 mr-2" data-asset="${asset.asset}">Detalhes</button>
-        </td>
-      `;
-      tbody.appendChild(trSummary);
-
-      // Detail history row (collapsible container)
-      const trHistory = document.createElement('tr');
-      trHistory.id = `history-row-${asset.asset}`;
-      trHistory.className = 'hidden bg-slateBorder/10 border-b border-slateBorder/30';
-      
-      const historyRowsHtml = asset.history.map(inv => `
-        <tr class="text-xs border-b border-slateBorder/20">
-          <td class="pl-12 py-2 text-slate-400 font-mono">${formatDateBR(inv.date)}</td>
-          <td class="py-2 text-slate-400 font-mono">${inv.quantity.toLocaleString('pt-BR')}</td>
-          <td class="py-2 text-slate-400 font-mono">${formatCurrency(inv.price)}</td>
-          <td class="py-2 text-slate-400 font-mono">${formatCurrency(inv.total)}</td>
-          <td class="pr-6 py-2 text-right">
-            <button class="btn-edit-investment text-cyanAcc hover:underline mr-3" data-id="${inv.id}">Editar</button>
-            <button class="btn-delete-investment text-accentPink hover:underline" data-id="${inv.id}">Excluir</button>
-          </td>
-        </tr>
-      `).join('');
-
-      trHistory.innerHTML = `
-        <td colspan="5" class="p-0">
-          <table class="w-full">
-            <thead>
-              <tr class="text-left border-b border-slateBorder text-[10px] text-slate-400 uppercase tracking-wider bg-panel/60">
-                <th class="pl-12 py-2 font-medium">Data da Operação</th>
-                <th class="py-2 font-medium">Quantidade</th>
-                <th class="py-2 font-medium">Preço da Compra</th>
-                <th class="py-2 font-medium">Valor Total</th>
-                <th class="pr-6 py-2 text-right font-medium">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${historyRowsHtml}
-            </tbody>
-          </table>
-        </td>
-      `;
-      tbody.appendChild(trHistory);
+          cardDiv.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-cyanAcc flex items-center gap-1.5 text-sm sm:text-base">
+                  <i class="fa-solid fa-coins text-accentAmber text-xs"></i>
+                  ${asset.asset}
+                </h4>
+                <div class="text-xs text-slate-400 mt-1">
+                  Qtd Total: <span class="text-slate-200 font-mono font-medium">${asset.totalQuantity.toLocaleString('pt-BR')}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-jade font-bold font-mono text-sm sm:text-base">${formatCurrency(asset.totalCost)}</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">PM Médio: ${formatCurrency(asset.averagePrice)}</div>
+              </div>
+            </div>
+            
+            <div class="flex justify-end pt-2 border-t border-slateBorder/20">
+              <button class="btn-expand-history text-xs font-semibold text-slate-400 hover:text-slate-200 border border-slateBorder/60 rounded-lg px-3 py-1.5" data-asset="${asset.asset}">Detalhes</button>
+            </div>
+            
+            <div id="mobile-history-row-${asset.asset}" class="hidden space-y-2 pt-3 border-t border-dashed border-slateBorder/20">
+              <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Histórico de Compras</div>
+              ${historyHtml}
+            </div>
+          `;
+          mobileList.appendChild(cardDiv);
+        }
+      }
     }
   }
 
@@ -535,70 +667,136 @@ class DomRenderer {
     const modalTitle = document.getElementById('drilldown-modal-title');
     const tbody = document.getElementById('drilldown-modal-body');
     const headersRow = document.getElementById('drilldown-modal-headers');
+    const mobileList = document.getElementById('mobile-drilldown-list');
     
-    if (!modal || !modalTitle || !tbody) return;
+    if (!modal || !modalTitle) return;
 
     modalTitle.textContent = title;
-    tbody.innerHTML = '';
 
     const isInvestment = items.length > 0 && items[0].isInvestment;
 
-    if (headersRow) {
-      if (isInvestment) {
-        headersRow.innerHTML = `
-          <th class="px-6 py-3">Data</th>
-          <th class="px-6 py-3">Ativo</th>
-          <th class="px-6 py-3">Quantidade</th>
-          <th class="px-6 py-3">Preço Unitário</th>
-          <th class="px-6 py-3">Valor Total</th>
+    if (tbody) {
+      tbody.innerHTML = '';
+      if (headersRow) {
+        if (isInvestment) {
+          headersRow.innerHTML = `
+            <th class="px-6 py-3">Data</th>
+            <th class="px-6 py-3">Ativo</th>
+            <th class="px-6 py-3">Quantidade</th>
+            <th class="px-6 py-3">Preço Unitário</th>
+            <th class="px-6 py-3">Valor Total</th>
+          `;
+        } else {
+          headersRow.innerHTML = `
+            <th class="px-6 py-3">Data</th>
+            <th class="px-6 py-3">Descrição</th>
+            <th class="px-6 py-3">Categoria</th>
+            <th class="px-6 py-3">Método</th>
+            <th class="px-6 py-3">Vínculo (Parcela)</th>
+            <th class="px-6 py-3">Valor Lançado</th>
+          `;
+        }
+      }
+
+      if (items.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${isInvestment ? 5 : 6}" class="px-6 py-8 text-center text-slate-400">Nenhum registro encontrado para essa métrica.</td>
+          </tr>
         `;
       } else {
-        headersRow.innerHTML = `
-          <th class="px-6 py-3">Data</th>
-          <th class="px-6 py-3">Descrição</th>
-          <th class="px-6 py-3">Categoria</th>
-          <th class="px-6 py-3">Método</th>
-          <th class="px-6 py-3">Vínculo (Parcela)</th>
-          <th class="px-6 py-3">Valor Lançado</th>
-        `;
+        // Sort itemized values by date descending
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        for (const item of items) {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slateBorder/30 hover:bg-slateBorder/10 transition-colors duration-100 text-sm';
+          
+          if (isInvestment) {
+            tr.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${formatDateBR(item.date)}</td>
+              <td class="px-6 py-4 text-slate-100 font-bold">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-coins text-accentAmber text-xs"></i>
+                  <span>${item.asset}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-slate-300 font-mono">${item.quantity.toLocaleString('pt-BR')}</td>
+              <td class="px-6 py-4 text-slate-300 font-mono">${formatCurrency(item.price)}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-jade font-mono font-semibold">${formatCurrency(item.total)}</td>
+            `;
+          } else {
+            tr.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${formatDateBR(item.date)}</td>
+              <td class="px-6 py-4 text-slate-100 font-semibold">${item.description}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slateBorder/40 text-slate-300 border border-slateBorder">${item.category}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-slate-300">${item.method}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${item.cardName || '-'} (${item.installmentInfo || '1/1'})</td>
+              <td class="px-6 py-4 whitespace-nowrap text-jade font-mono font-semibold">${formatCurrency(item.value)}</td>
+            `;
+          }
+          tbody.appendChild(tr);
+        }
       }
     }
 
-    if (items.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="${isInvestment ? 5 : 6}" class="px-6 py-8 text-center text-slate-400">Nenhum registro encontrado para essa métrica.</td>
-        </tr>
-      `;
-    } else {
-      // Sort itemized values by date descending
-      items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (mobileList) {
+      mobileList.innerHTML = '';
+      if (items.length === 0) {
+        mobileList.innerHTML = `
+          <div class="text-center text-slate-400 py-8 text-sm">
+            Nenhum registro encontrado para essa métrica.
+          </div>
+        `;
+      } else {
+        items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      for (const item of items) {
-        const tr = document.createElement('tr');
-        tr.className = 'border-b border-slateBorder/30 hover:bg-slateBorder/10 transition-colors duration-100 text-sm';
-        
-        if (isInvestment) {
-          tr.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${formatDateBR(item.date)}</td>
-            <td class="px-6 py-4 text-slate-100 font-bold">${item.asset}</td>
-            <td class="px-6 py-4 text-slate-300 font-mono">${item.quantity.toLocaleString('pt-BR')}</td>
-            <td class="px-6 py-4 text-slate-300 font-mono">${formatCurrency(item.price)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-jade font-mono font-semibold">${formatCurrency(item.total)}</td>
-          `;
-        } else {
-          tr.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${formatDateBR(item.date)}</td>
-            <td class="px-6 py-4 text-slate-100 font-semibold">${item.description}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-slateBorder/40 text-slate-300 border border-slateBorder">${item.category}</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-slate-300">${item.method}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-slate-300 font-mono">${item.cardName || '-'} (${item.installmentInfo || '1/1'})</td>
-            <td class="px-6 py-4 whitespace-nowrap text-jade font-mono font-semibold">${formatCurrency(item.value)}</td>
-          `;
+        for (const item of items) {
+          const cardDiv = document.createElement('div');
+          cardDiv.className = 'bg-obsidian/60 border border-slateBorder/30 p-4 rounded-xl space-y-3 text-xs';
+          
+          if (isInvestment) {
+            cardDiv.innerHTML = `
+              <div class="flex justify-between items-center">
+                <span class="font-bold text-cyanAcc flex items-center gap-1.5">
+                  <i class="fa-solid fa-coins text-accentAmber text-[10px]"></i>
+                  ${item.asset}
+                </span>
+                <span class="text-slate-400 font-mono">${formatDateBR(item.date)}</span>
+              </div>
+              <div class="flex justify-between items-center text-slate-300 font-mono pt-1.5 border-t border-slateBorder/10">
+                <span>Qtd: ${item.quantity.toLocaleString('pt-BR')} • PM: ${formatCurrency(item.price)}</span>
+                <span class="text-jade font-bold font-mono text-sm">${formatCurrency(item.total)}</span>
+              </div>
+            `;
+          } else {
+            const methodIcon = item.method === 'Crédito' 
+              ? '<i class="fa-solid fa-credit-card text-accentIndigo mr-1"></i>' 
+              : '<i class="fa-solid fa-wallet text-jade mr-1"></i>';
+            cardDiv.innerHTML = `
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-bold text-slate-200">${item.description}</h4>
+                  <span class="text-[10px] text-slate-400 mt-1 flex items-center">
+                    ${methodIcon} ${item.cardName ? `${item.cardName} (${item.installmentInfo || '1/1'})` : item.method}
+                  </span>
+                </div>
+                <div class="text-right">
+                  <span class="text-jade font-bold font-mono text-sm">${formatCurrency(item.value)}</span>
+                  <div class="text-[10px] text-slate-500 font-mono mt-0.5">${formatDateBR(item.date)}</div>
+                </div>
+              </div>
+              <div class="pt-1.5 border-t border-slateBorder/10">
+                <span class="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-slateBorder/50 text-slate-300 border border-slateBorder">
+                  ${item.category}
+                </span>
+              </div>
+            `;
+          }
+          mobileList.appendChild(cardDiv);
         }
-        tbody.appendChild(tr);
       }
     }
 
