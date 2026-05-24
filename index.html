@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-obsidian">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iFinc Pro - Next-Gen Financial System</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#050816',
+            panel: '#0b1229',
+            jade: '#10b981',
+            cyanAcc: '#22d3ee',
+            slateBorder: '#1f2a4b',
+            accentPink: '#f43f5e',
+            accentViolet: '#8b5cf6',
+            accentAmber: '#f59e0b',
+            accentIndigo: '#6366f1'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom scrollbars and styling tweaks -->
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    h1, h2, h3, h4, .font-display {
+      font-family: 'Outfit', sans-serif;
+    }
+    /* Custom Scrollbar for modern feel */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050816;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f2a4b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #22d3ee;
+    }
+    /* Glassmorphism utilities */
+    .glass-panel {
+      background: rgba(11, 18, 41, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="h-full flex flex-col text-slate-100 overflow-hidden">
+
+  <!-- TOP HEADER PANEL -->
+  <header class="bg-panel border-b border-slateBorder/40 h-16 flex items-center justify-between px-4 sm:px-6 z-10 shrink-0">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Cyber Logo -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-jade to-cyanAcc flex items-center justify-center shadow-lg shadow-cyanAcc/20 animate-pulse">
+          <i class="fa-solid fa-chart-line text-obsidian font-bold"></i>
+        </div>
+        <span class="text-lg sm:text-xl font-bold tracking-tight font-display hidden min-[380px]:inline">
+          iFinc <span class="text-cyanAcc">Pro</span>
+        </span>
+      </div>
+      <!-- Sync Status Badge -->
+      <span id="sync-badge" class="px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-full bg-jade/20 text-jade border border-jade/30">
+        Carregando...
+      </span>
+      <span id="sync-queue-count" class="text-xs text-slate-400 font-mono hidden md:inline">
+        0 pendências
+      </span>
+    </div>
+
+    <!-- Actions Panel -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <!-- Synchronize Button -->
+      <button id="btn-sync" class="flex items-center gap-2 bg-jade/10 border border-jade/20 hover:bg-jade/20 text-jade px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-md">
+        <i class="fa-solid fa-rotate"></i>
+        <span class="hidden sm:inline">Sincronizar</span>
+      </button>
+
+      <!-- Horizontal Divider -->
+      <div class="w-px h-6 bg-slateBorder/50 mx-0.5 sm:mx-1"></div>
+
+      <!-- Backup Export Button -->
+      <button id="btn-export-backup" title="Exportar Backup JSON" class="p-2 sm:p-2.5 rounded-xl border border-slateBorder/50 hover:bg-panel bg-obsidian text-slate-300 hover:text-cyanAcc transition-colors">
+        <i class="fa-solid fa-file-export"></i>
+      </button>
+      
+      <!-- Backup Import Button -->
+      <button id="btn-trigger-import" title="Importar Backup JSON" class="p-2 sm:p-2.5 rounded-xl border border-slateBorder/50 hover:bg-panel bg-obsidian text-slate-300 hover:text-cyanAcc transition-colors">
+        <i class="fa-solid fa-file-import"></i>
+      </button>
+      <input type="file" id="input-import-file" class="hidden" accept=".json">
+
+      <!-- Settings button -->
+      <button id="btn-open-settings" title="Configurações da API" class="p-2 sm:p-2.5 rounded-xl border border-slateBorder/50 hover:bg-panel bg-obsidian text-slate-300 hover:text-cyanAcc transition-colors">
+        <i class="fa-solid fa-sliders"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- BODY CONTENT AREA (Sidebar + Panel Views) -->
+  <div class="flex flex-1 overflow-hidden">
+    
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <aside class="hidden md:flex w-64 bg-obsidian border-r border-slateBorder/30 p-4 flex-col justify-between shrink-0">
+      <div class="space-y-6">
+        <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400 pl-3">
+          Módulos do Sistema
+        </div>
+        <nav class="space-y-1">
+          <button data-tab="dashboard" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border-l-2 text-cyanAcc border-cyanAcc transition-all duration-150">
+            <i class="fa-solid fa-gauge-high text-lg"></i>
+            <span>Painel de Análise</span>
+          </button>
+          
+          <button data-tab="expenses" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border-l-2 text-slate-400 border-transparent hover:text-slate-200 transition-all duration-150">
+            <i class="fa-solid fa-money-bill-transfer text-lg"></i>
+            <span>Livro de Despesas</span>
+          </button>
+
+          <button data-tab="investments" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border-l-2 text-slate-400 border-transparent hover:text-slate-200 transition-all duration-150">
+            <i class="fa-solid fa-arrow-trend-up text-lg"></i>
+            <span>Investimentos</span>
+          </button>
+
+          <button data-tab="config" class="tab-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border-l-2 text-slate-400 border-transparent hover:text-slate-200 transition-all duration-150">
+            <i class="fa-solid fa-credit-card text-lg"></i>
+            <span>Cartões & Regras</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Footer system context -->
+      <div class="p-3 bg-panel/40 border border-slateBorder/20 rounded-xl">
+        <div class="text-[10px] text-slate-400 font-mono">USUÁRIO CORRENTE</div>
+        <div class="text-xs font-bold text-slate-200 truncate">Sistemas Financeiros</div>
+        <div class="mt-2 text-[10px] text-slate-400 font-mono">STATUS: <span class="text-jade font-bold">CLIENT-SIDE</span></div>
+      </div>
+    </aside>
+
+    <!-- VIEWS SCROLL PANEL -->
+    <main class="flex-1 overflow-y-auto bg-obsidian p-4 md:p-6 pb-24 md:pb-6 relative">
+
+      <!-- ================= TAB: DASHBOARD ================= -->
+      <section id="panel-dashboard" class="tab-panel space-y-6">
+        <!-- Dashboard Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold tracking-tight text-slate-100">Painel Geral de Projeções</h2>
+            <p class="text-sm text-slate-400">Análise de fluxos líquidos e projeções futuras de gastos recorrentes.</p>
+          </div>
+          <!-- Month Selector -->
+          <div class="flex items-center gap-3 bg-panel border border-slateBorder p-2.5 rounded-xl">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider pl-1">Exibindo:</span>
+            <select id="dashboard-month-selector" class="bg-obsidian border border-slateBorder text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyanAcc px-3 py-1 rounded-lg">
+              <!-- Dynamically populated months -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          
+          <!-- Metrícula 1: Total Liquid + Credit -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-lg relative overflow-hidden">
+            <div class="absolute right-3 top-3 text-slateBorder/40 text-4xl">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Despesa Total Referência</div>
+            <div id="val-total-outflow" class="text-2xl font-bold text-slate-100 font-mono mt-1">R$ 0,00</div>
+            <div id="metrics-month-name" class="text-[10px] text-cyanAcc mt-2 font-mono">Janeiro de 2026</div>
+          </div>
+
+          <!-- Metrícula 2: Cashflow Pix/Debit -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-lg relative overflow-hidden">
+            <div class="absolute right-3 top-3 text-slateBorder/40 text-4xl">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Saídas Líquidas (Pix)</div>
+            <div id="val-liquid-outflow" class="text-2xl font-bold text-jade font-mono mt-1">R$ 0,00</div>
+            <div class="text-[10px] text-slate-400 mt-2">Débito imediato em conta</div>
+          </div>
+
+          <!-- Metrícula 3: CC Liabilities -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-lg relative overflow-hidden">
+            <div class="absolute right-3 top-3 text-slateBorder/40 text-4xl">
+              <i class="fa-solid fa-credit-card"></i>
+            </div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Fatura de Crédito</div>
+            <div id="val-credit-outflow" class="text-2xl font-bold text-accentIndigo font-mono mt-1">R$ 0,00</div>
+            <div class="text-[10px] text-slate-400 mt-2">Valores diferidos no tempo</div>
+          </div>
+
+          <!-- Metrícula 4: Investments -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-lg relative overflow-hidden">
+            <div class="absolute right-3 top-3 text-slateBorder/40 text-4xl">
+              <i class="fa-solid fa-coins"></i>
+            </div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Portfólio de Investimentos</div>
+            <div id="val-invested-portfolio" class="text-2xl font-bold text-cyanAcc font-mono mt-1">R$ 0,00</div>
+            <div class="text-[10px] text-slate-400 mt-2">Custo total acumulado</div>
+          </div>
+        </div>
+
+        <!-- CHARTS SECTION GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Chart 1: Historical Cashflow Matrix -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl lg:col-span-2 shadow-2xl">
+            <h3 class="font-bold text-slate-200 mb-4 flex items-center justify-between text-base">
+              <span>Matriz de Fluxo de Caixa Histórico & Projetado</span>
+              <span class="text-xs text-slate-400 font-normal italic">Clique nos pontos para detalhes</span>
+            </h3>
+            <div class="h-80 relative">
+              <canvas id="chart-cashflow"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Allocation -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-2xl">
+            <h3 class="font-bold text-slate-200 mb-4 flex items-center justify-between text-base">
+              <span>Distribuição por Categoria</span>
+              <span class="text-xs text-slate-400 font-normal italic">No mês de ref.</span>
+            </h3>
+            <div class="h-80 relative">
+              <canvas id="chart-category"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Chart 3: Stacked Card Statements -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-2xl">
+            <h3 class="font-bold text-slate-200 mb-4 flex items-center justify-between text-base">
+              <span>Composição da Fatura dos Cartões</span>
+              <span class="text-xs text-slate-400 font-normal italic">Detalhamento categórico</span>
+            </h3>
+            <div class="h-80 relative">
+              <canvas id="chart-liability"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 4: Capital Accumulation Tickers -->
+          <div class="bg-panel border border-slateBorder p-5 rounded-xl shadow-2xl">
+            <h3 class="font-bold text-slate-200 mb-4 flex items-center justify-between text-base">
+              <span>Velocidade de Acúmulo e Preço Médio</span>
+              <span class="text-xs text-slate-400 font-normal italic">Filtragem por ticker ativo</span>
+            </h3>
+            <div class="h-80 relative">
+              <canvas id="chart-accumulation"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: EXPENSES ================= -->
+      <section id="panel-expenses" class="tab-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold tracking-tight text-slate-100">Despesas Cadastradas</h2>
+            <p class="text-sm text-slate-400">Gerencie todos os gastos individuais, compras à vista e faturas amortizadas.</p>
+          </div>
+          <button id="btn-new-expense" class="flex items-center gap-2 bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-4 py-2.5 rounded-xl text-sm font-semibold transition-all">
+            <i class="fa-solid fa-plus"></i>
+            <span>Novo Gasto</span>
+          </button>
+        </div>
+
+        <!-- Filters Block -->
+        <div class="bg-panel border border-slateBorder/50 p-4 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Text Search -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Busca de Texto</label>
+            <input type="text" id="filtro-gasto-busca" placeholder="Filtrar por descrição..." class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyanAcc/30 rounded-lg px-3 py-2">
+          </div>
+          <!-- Category -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Categoria</label>
+            <select id="filtro-gasto-categoria" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyanAcc/30 rounded-lg px-3 py-2">
+              <option value="">Todas</option>
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <!-- Method -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Método de Saída</label>
+            <select id="filtro-gasto-metodo" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyanAcc/30 rounded-lg px-3 py-2">
+              <option value="">Todos</option>
+              <option value="PixDebito">Pix / Débito em Conta</option>
+              <option value="Card">Cartão de Crédito</option>
+            </select>
+          </div>
+          <!-- Card selection -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Cartão de Crédito</label>
+            <select id="filtro-gasto-cartao" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyanAcc/30 rounded-lg px-3 py-2">
+              <option value="">Todos</option>
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Ledger Table Grid -->
+        <div class="bg-panel border border-slateBorder/50 rounded-xl overflow-hidden shadow-2xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slateBorder bg-obsidian/60 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th class="px-6 py-4">Data Compra</th>
+                  <th class="px-6 py-4">Descrição</th>
+                  <th class="px-6 py-4">Categoria</th>
+                  <th class="px-6 py-4">Método</th>
+                  <th class="px-6 py-4">Cartão</th>
+                  <th class="px-6 py-4">Parcelas</th>
+                  <th class="px-6 py-4">Valor Total</th>
+                  <th class="px-6 py-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="table-expenses-body" class="divide-y divide-slateBorder/20">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: INVESTMENTS ================= -->
+      <section id="panel-investments" class="tab-panel hidden space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-bold tracking-tight text-slate-100">Ativos & Custódia de Investimentos</h2>
+            <p class="text-sm text-slate-400">Verifique a distribuição de cotas e o preço médio ponderado por ticker.</p>
+          </div>
+          <button id="btn-new-investment" class="flex items-center gap-2 bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-4 py-2.5 rounded-xl text-sm font-semibold transition-all">
+            <i class="fa-solid fa-plus"></i>
+            <span>Novo Investimento</span>
+          </button>
+        </div>
+
+        <!-- Filters Block -->
+        <div class="bg-panel border border-slateBorder/50 p-4 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filtrar por Ticker</label>
+            <input type="text" id="filtro-investimento-busca" placeholder="Ex: WEGE3..." class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyanAcc/30 rounded-lg px-3 py-2 uppercase">
+          </div>
+        </div>
+
+        <!-- Investments table list -->
+        <div class="bg-panel border border-slateBorder/50 rounded-xl overflow-hidden shadow-2xl">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slateBorder bg-obsidian/60 text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  <th class="px-6 py-4">Código do Ativo</th>
+                  <th class="px-6 py-4">Quantidade Total</th>
+                  <th class="px-6 py-4">Preço Médio Ponderado</th>
+                  <th class="px-6 py-4">Custo de Aquisição</th>
+                  <th class="px-6 py-4 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="table-investments-body" class="divide-y divide-slateBorder/20">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: CONFIGURATION ================= -->
+      <section id="panel-config" class="tab-panel hidden space-y-6">
+        <div>
+          <h2 class="text-2xl font-bold tracking-tight text-slate-100">Regras de Negócio & Gerenciamento</h2>
+          <p class="text-sm text-slate-400">Configure cartões de crédito, categorize transações e revise layouts do ecossistema.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Box: Cards Manager -->
+          <div class="bg-panel border border-slateBorder/50 p-6 rounded-xl shadow-lg space-y-4">
+            <div class="flex items-center justify-between border-b border-slateBorder/40 pb-3">
+              <h3 class="font-bold text-slate-200 text-lg flex items-center gap-2">
+                <i class="fa-solid fa-credit-card text-cyanAcc"></i>
+                <span>Cartões de Crédito</span>
+              </h3>
+              <button id="btn-new-card" class="text-xs bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-3 py-1.5 rounded-lg transition-colors">
+                Novo Cartão
+              </button>
+            </div>
+            <div id="list-cards-container" class="space-y-2 overflow-y-auto max-h-72">
+              <!-- Dynamically populated cards -->
+            </div>
+          </div>
+
+          <!-- Box: Categories Manager -->
+          <div class="bg-panel border border-slateBorder/50 p-6 rounded-xl shadow-lg space-y-4">
+            <div class="flex items-center justify-between border-b border-slateBorder/40 pb-3">
+              <h3 class="font-bold text-slate-200 text-lg flex items-center gap-2">
+                <i class="fa-solid fa-tag text-cyanAcc"></i>
+                <span>Categorias de Despesa</span>
+              </h3>
+              <button id="btn-new-category" class="text-xs bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-3 py-1.5 rounded-lg transition-colors">
+                Nova Categoria
+              </button>
+            </div>
+            <div id="list-categories-container" class="space-y-2">
+              <!-- Dynamically populated categories -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Apps Script Source documentation help block -->
+        <div class="bg-panel border border-slateBorder/50 p-6 rounded-xl shadow-lg space-y-4">
+          <h3 class="font-bold text-slate-200 text-lg flex items-center gap-2 border-b border-slateBorder/40 pb-3">
+            <i class="fa-solid fa-code text-jade"></i>
+            <span>Macro Google Apps Script (Código de Deploy)</span>
+          </h3>
+          <p class="text-sm text-slate-400">
+            Abaixo está o código que deve ser inserido no Editor de Scripts da sua Planilha Google. 
+            Ele escuta as conexões da API do iFinc Pro, salva os registros e responde as consultas em tempo real.
+          </p>
+          <pre class="bg-obsidian border border-slateBorder p-4 rounded-xl text-xs text-cyanAcc font-mono overflow-x-auto max-h-60">
+// --- Cole este código no Google Apps Script ---
+function doGet(e) {
+  var action = e.parameter.action;
+  if (action === 'pull') {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success',
+      data: pullDatabase()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: 'Ação GET desconhecida' })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var payload = JSON.parse(e.postData.contents);
+    if (payload.action === 'sync') {
+      processSyncQueue(payload.queue);
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        message: 'Sincronização concluída com sucesso!'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function pullDatabase() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  return {
+    cartoes: getSheetRows(ss, "cartoes"),
+    categorias: getSheetRows(ss, "categorias"),
+    gastos: getSheetRows(ss, "gastos"),
+    investimentos: getSheetRows(ss, "investimentos")
+  };
+}
+
+function getSheetRows(ss, sheetName) {
+  var sheet = getSheetNormalized(ss, sheetName);
+  if (!sheet) return [];
+  checkAndCreateHeaders(sheet, sheetName);
+  var data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+  var headers = data[0];
+  var rows = [];
+  for (var r = 1; r < data.length; r++) {
+    var obj = {};
+    for (var c = 0; c < headers.length; c++) {
+      obj[headers[c]] = data[r][c];
+    }
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function processSyncQueue(queue) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  for (var i = 0; i < queue.length; i++) {
+    var trx = queue[i];
+    var sheet = getSheetNormalized(ss, trx.type);
+    if (!sheet) continue;
+    
+    checkAndCreateHeaders(sheet, trx.type);
+    
+    var op = trx.op;
+    var data = trx.payload;
+    
+    if (op === 'CREATE') {
+      appendRow(sheet, data, trx.type);
+    } else if (op === 'UPDATE') {
+      updateRow(sheet, data, trx.type);
+    } else if (op === 'DELETE') {
+      deleteRow(sheet, data, trx.type);
+    }
+  }
+}
+
+function appendRow(sheet, obj, type) {
+  var headers = sheet.getDataRange().getValues()[0];
+  var newRow = [];
+  for (var i = 0; i < headers.length; i++) {
+    var val = obj[mapHeaderName(headers[i], type)];
+    newRow.push(val !== undefined ? val : "");
+  }
+  sheet.appendRow(newRow);
+}
+
+function updateRow(sheet, obj, type) {
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var idCol = headers.indexOf(type === 'categorias' ? 'nome' : 'id');
+  if (idCol === -1) return;
+  
+  var targetId = obj[type === 'categorias' ? 'name' : 'id'];
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][idCol]) === String(targetId)) {
+      for (var c = 0; c < headers.length; c++) {
+        var key = mapHeaderName(headers[c], type);
+        if (obj[key] !== undefined) {
+          sheet.getRange(r + 1, c + 1).setValue(obj[key]);
+        }
+      }
+      break;
+    }
+  }
+}
+
+function deleteRow(sheet, obj, type) {
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var idCol = headers.indexOf(type === 'categorias' ? 'nome' : 'id');
+  if (idCol === -1) return;
+  
+  var targetId = type === 'categorias' ? obj.nome : obj.id;
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][idCol]) === String(targetId)) {
+      sheet.deleteRow(r + 1);
+      break;
+    }
+  }
+}
+
+function mapHeaderName(header, type) {
+  if (type === 'cartoes') {
+    if (header === 'id') return 'id';
+    if (header === 'nome') return 'name';
+    if (header === 'vencimentoDia') return 'dueDay';
+  }
+  if (type === 'categorias') {
+    if (header === 'nome') return 'name';
+  }
+  if (type === 'gastos') {
+    if (header === 'id') return 'id';
+    if (header === 'data') return 'date';
+    if (header === 'descricao') return 'description';
+    if (header === 'valor') return 'value';
+    if (header === 'categoria') return 'category';
+    if (header === 'metodo') return 'method';
+    if (header === 'cartaoId') return 'cardId';
+    if (header === 'parcelas') return 'installments';
+    if (header === 'emprestimo') return 'isLoan';
+  }
+  if (type === 'investimentos') {
+    if (header === 'id') return 'id';
+    if (header === 'data') return 'date';
+    if (header === 'ativo') return 'asset';
+    if (header === 'quantidade') return 'quantity';
+    if (header === 'precoMedio') return 'averagePrice';
+  }
+  return header;
+}
+
+function getSheetNormalized(ss, targetName) {
+  var sheets = ss.getSheets();
+  var target = normalizeStr(targetName);
+  for (var i = 0; i < sheets.length; i++) {
+    var name = normalizeStr(sheets[i].getName());
+    if (name === target) {
+      return sheets[i];
+    }
+  }
+  return null;
+}
+
+function normalizeStr(str) {
+  if (!str) return "";
+  return str.toString().toLowerCase()
+            .replace(/[áàâãä]/g, "a")
+            .replace(/[éèêë]/g, "e")
+            .replace(/[íìîï]/g, "i")
+            .replace(/[óòôõö]/g, "o")
+            .replace(/[úùûü]/g, "u")
+            .replace(/[ç]/g, "c")
+            .trim();
+}
+
+function checkAndCreateHeaders(sheet, type) {
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  
+  if (lastRow === 0 || (lastRow === 1 && lastCol === 1 && sheet.getRange(1, 1).getValue() === "")) {
+    var headers = [];
+    if (type === 'cartoes') headers = ['id', 'nome', 'vencimentoDia'];
+    if (type === 'categorias') headers = ['nome'];
+    if (type === 'gastos') headers = ['id', 'data', 'descricao', 'valor', 'categoria', 'metodo', 'cartaoId', 'parcelas', 'emprestimo'];
+    if (type === 'investimentos') headers = ['id', 'data', 'ativo', 'quantidade', 'precoMedio'];
+    
+    if (headers.length > 0) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      SpreadsheetApp.flush();
+    }
+  }
+}
+          </pre>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ================= UNIVERSAL DETAIL DRILL-DOWN MODAL ================= -->
+  <div id="drilldown-modal" class="modal-overlay fixed inset-0 glass-panel bg-obsidian/75 items-center justify-center hidden z-50 p-4 transition-all duration-300">
+    <div class="bg-panel border border-slateBorder/50 w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slateBorder/30 flex justify-between items-center shrink-0">
+        <h3 id="drilldown-modal-title" class="text-lg font-bold text-slate-100 font-display">Lançamentos Consolidados</h3>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+      <!-- Modal Content (Table list) -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="border border-slateBorder/50 rounded-xl overflow-hidden bg-obsidian/40">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr id="drilldown-modal-headers" class="border-b border-slateBorder bg-panel text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <th class="px-6 py-3">Data</th>
+                <th class="px-6 py-3">Descrição</th>
+                <th class="px-6 py-3">Categoria</th>
+                <th class="px-6 py-3">Método</th>
+                <th class="px-6 py-3">Vínculo (Parcela)</th>
+                <th class="px-6 py-3">Valor Lançado</th>
+              </tr>
+            </thead>
+            <tbody id="drilldown-modal-body" class="divide-y divide-slateBorder/20">
+              <!-- Filled on click -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-slateBorder/30 flex justify-end shrink-0 bg-panel/30">
+        <button class="btn-close-modal bg-slateBorder hover:bg-slateBorder/80 text-slate-200 px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= FORM MODAL: EXPENSE (CREATE / EDIT) ================= -->
+  <div id="modal-expense" class="modal-overlay fixed inset-0 glass-panel bg-obsidian/75 items-center justify-center hidden z-50 p-4">
+    <div class="bg-panel border border-slateBorder/50 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div class="px-6 py-4 border-b border-slateBorder/30 flex justify-between items-center shrink-0">
+        <h3 id="modal-expense-title" class="text-lg font-bold text-slate-100 font-display">Registrar Novo Gasto</h3>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+      
+      <form id="form-expense" class="flex-1 overflow-y-auto p-6 space-y-4">
+        <input type="hidden" id="gasto-id">
+        
+        <!-- Date -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Data do Gasto</label>
+          <input type="date" id="gasto-data" required class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Descrição</label>
+          <input type="text" id="gasto-descricao" required placeholder="Ex: Supermercado Assaí" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5">
+        </div>
+
+        <!-- Value -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Valor (R$)</label>
+          <input type="number" step="0.01" id="gasto-valor" required placeholder="0,00" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <!-- Category -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Categoria</label>
+          <select id="gasto-categoria" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Method -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Método de Saída</label>
+          <select id="gasto-metodo" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5">
+            <option value="PixDebito">Pix / Débito em Conta</option>
+            <option value="Card">Cartão de Crédito</option>
+          </select>
+        </div>
+
+        <!-- Credit Card Fields -->
+        <div id="credit-card-fields" class="space-y-4 hidden border-l-2 border-slateBorder pl-4 py-1">
+          <!-- Card selection -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Qual Cartão?</label>
+            <select id="gasto-cartao" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5">
+              <option value="">Selecione o cartão...</option>
+              <!-- Dynamically populated -->
+            </select>
+          </div>
+          <!-- Installments -->
+          <div>
+            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Parcelas</label>
+            <input type="number" id="gasto-parcelas" min="1" value="1" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+          </div>
+        </div>
+
+        <!-- Is Loan Checkbox -->
+        <div class="flex items-center gap-2 pt-2">
+          <input type="checkbox" id="gasto-emprestimo" class="h-4.5 w-4.5 bg-obsidian border-slateBorder border rounded text-cyanAcc focus:ring-cyanAcc/20">
+          <label for="gasto-emprestimo" class="text-xs font-bold text-slate-300 uppercase tracking-wider cursor-pointer">
+            Este gasto é um empréstimo concedido?
+          </label>
+        </div>
+
+        <!-- Modal Footer inside Form -->
+        <div class="pt-4 flex justify-end gap-3 border-t border-slateBorder/30 shrink-0">
+          <button type="button" class="btn-close-modal bg-slateBorder hover:bg-slateBorder/80 text-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Salvar Lançamento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= FORM MODAL: INVESTMENT (CREATE / EDIT) ================= -->
+  <div id="modal-investment" class="modal-overlay fixed inset-0 glass-panel bg-obsidian/75 items-center justify-center hidden z-50 p-4">
+    <div class="bg-panel border border-slateBorder/50 w-full max-w-lg rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div class="px-6 py-4 border-b border-slateBorder/30 flex justify-between items-center shrink-0">
+        <h3 id="modal-investment-title" class="text-lg font-bold text-slate-100 font-display">Registrar Novo Investimento</h3>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+
+      <form id="form-investment" class="flex-1 overflow-y-auto p-6 space-y-4">
+        <input type="hidden" id="invest-id">
+        
+        <!-- Date -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Data da Operação</label>
+          <input type="date" id="invest-data" required class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <!-- Ticker -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Ticker (Código do Ativo)</label>
+          <input type="text" id="invest-ativo" required placeholder="Ex: WEGE3" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 uppercase font-mono">
+        </div>
+
+        <!-- Quantity -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Quantidade</label>
+          <input type="number" step="any" id="invest-quantidade" required placeholder="0" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <!-- Average Price -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Preço Unitário (R$)</label>
+          <input type="number" step="0.01" id="invest-preco" required placeholder="0,00" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <!-- Modal Footer inside Form -->
+        <div class="pt-4 flex justify-end gap-3 border-t border-slateBorder/30 shrink-0">
+          <button type="button" class="btn-close-modal bg-slateBorder hover:bg-slateBorder/80 text-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Salvar Operação
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= FORM MODAL: CREDIT CARD (CREATE) ================= -->
+  <div id="modal-card" class="modal-overlay fixed inset-0 glass-panel bg-obsidian/75 items-center justify-center hidden z-50 p-4">
+    <div class="bg-panel border border-slateBorder/50 w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-6 py-4 border-b border-slateBorder/30 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-slate-100 font-display">Registrar Novo Cartão</h3>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+
+      <form id="form-card" class="p-6 space-y-4">
+        <!-- Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nome do Cartão</label>
+          <input type="text" id="card-nome" required placeholder="Ex: Nubank Ultravioleta" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5">
+        </div>
+        <!-- Due Day -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Dia de Vencimento</label>
+          <input type="number" id="card-vencimento" min="1" max="31" required placeholder="Ex: 10" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <div class="pt-4 flex justify-end gap-3 border-t border-slateBorder/30">
+          <button type="button" class="btn-close-modal bg-slateBorder hover:bg-slateBorder/80 text-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Adicionar Cartão
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= FORM MODAL: CATEGORY (CREATE) ================= -->
+  <div id="modal-category" class="modal-overlay fixed inset-0 glass-panel bg-obsidian/75 items-center justify-center hidden z-50 p-4">
+    <div class="bg-panel border border-slateBorder/50 w-full max-w-md rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-6 py-4 border-b border-slateBorder/30 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-slate-100 font-display">Criar Nova Categoria</h3>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+
+      <form id="form-category" class="p-6 space-y-4">
+        <!-- Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nome da Categoria</label>
+          <input type="text" id="cat-nome" required placeholder="Ex: Assinaturas" class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5">
+        </div>
+
+        <div class="pt-4 flex justify-end gap-3 border-t border-slateBorder/30">
+          <button type="button" class="btn-close-modal bg-slateBorder hover:bg-slateBorder/80 text-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" class="bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors">
+            Criar Categoria
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= FORM MODAL: SETTINGS (API LINK CONFIG) ================= -->
+  <div id="modal-settings" class="modal-overlay fixed inset-0 glass-panel bg-obsidian/75 items-center justify-center hidden z-50 p-4">
+    <div class="bg-panel border border-slateBorder/50 w-full max-w-xl rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div class="px-6 py-4 border-b border-slateBorder/30 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-slate-100 font-display">Configurações de Sincronização Remota</h3>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+
+      <form id="form-settings" class="p-6 space-y-4">
+        <p class="text-xs text-slate-400">
+          Insira a URL de Deploy Web App (Macros) gerada no Editor de Scripts da sua Planilha Google para fazer o upload/download de registros.
+        </p>
+
+        <!-- URL Input -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">URL da Macro API (POST/GET)</label>
+          <input type="url" id="settings-api-url" placeholder="https://script.google.com/macros/s/..." class="w-full bg-obsidian border border-slateBorder focus:border-cyanAcc text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyanAcc/20 rounded-xl px-4 py-2.5 font-mono">
+        </div>
+
+        <div class="pt-4 flex justify-between items-center border-t border-slateBorder/30">
+          <button type="button" id="btn-test-connection" class="bg-slateBorder hover:bg-slateBorder/80 text-slate-200 border border-slateBorder px-4 py-2 rounded-xl text-sm font-semibold transition-colors">
+            Testar Conexão
+          </button>
+          
+          <div class="flex gap-2">
+            <button type="button" class="btn-close-modal bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
+              Fechar
+            </button>
+            <button type="submit" class="bg-cyanAcc/15 hover:bg-cyanAcc/25 border border-cyanAcc/35 text-cyanAcc px-5 py-2 rounded-xl text-sm font-semibold transition-colors">
+              Salvar Link
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-panel/95 backdrop-blur-lg border-t border-slateBorder/40 flex justify-around items-center z-40 px-2 pb-safe shadow-2xl">
+    <button data-tab="dashboard" class="tab-btn flex flex-col items-center justify-center w-16 h-full text-cyanAcc">
+      <i class="fa-solid fa-gauge-high text-lg"></i>
+      <span class="text-[9px] mt-1 font-medium">Painel</span>
+    </button>
+    <button data-tab="expenses" class="tab-btn flex flex-col items-center justify-center w-16 h-full text-slate-400 hover:text-slate-200">
+      <i class="fa-solid fa-money-bill-transfer text-lg"></i>
+      <span class="text-[9px] mt-1 font-medium">Despesas</span>
+    </button>
+    <button data-tab="investments" class="tab-btn flex flex-col items-center justify-center w-16 h-full text-slate-400 hover:text-slate-200">
+      <i class="fa-solid fa-arrow-trend-up text-lg"></i>
+      <span class="text-[9px] mt-1 font-medium">Investir</span>
+    </button>
+    <button data-tab="config" class="tab-btn flex flex-col items-center justify-center w-16 h-full text-slate-400 hover:text-slate-200">
+      <i class="fa-solid fa-credit-card text-lg"></i>
+      <span class="text-[9px] mt-1 font-medium">Regras</span>
+    </button>
+  </div>
+
+  <!-- ================= FLOATING TOAST SYSTEM NOTIFICATION ================= -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- BOOTSTRAP APP MODULE -->
+  <script type="module" src="./app.js"></script>
+
+</body>
+</html>
