@@ -205,7 +205,7 @@ export function renderCategoryChart(canvasId, categoryTotals, onDrillDown) {
       plugins: {
         ...defaults.plugins,
         legend: {
-          position: 'right',
+          position: window.innerWidth < 640 ? 'bottom' : 'right',
           labels: {
             color: COLORS.textMain,
             font: { family: "'Outfit', sans-serif", size: 11 }

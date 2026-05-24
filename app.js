@@ -372,12 +372,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- TABLE INTERACTIONS (EVENT DELEGATION) ---
   
   // A. Expenses actions
-  document.getElementById('table-expenses-body')?.addEventListener('click', (e) => {
+  document.getElementById('panel-expenses')?.addEventListener('click', (e) => {
     const target = e.target;
     
+    // Check if target or ancestor has the class
+    const deleteBtn = target.closest('.btn-delete-expense');
+    const editBtn = target.closest('.btn-edit-expense');
+
     // Delete
-    if (target.classList.contains('btn-delete-expense')) {
-      const id = target.dataset.id;
+    if (deleteBtn) {
+      const id = deleteBtn.dataset.id;
       if (confirm('Tem certeza que deseja excluir esta despesa?')) {
         store.deleteExpense(id);
         showToast('Despesa excluída!');
@@ -385,8 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Edit
-    if (target.classList.contains('btn-edit-expense')) {
-      const id = target.dataset.id;
+    if (editBtn) {
+      const id = editBtn.dataset.id;
       const exp = store.getExpenses().find(x => x.id === id);
       if (exp) {
         renderer.currentEditExpenseId = id;
@@ -410,28 +414,47 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // B. Investments actions
-  document.getElementById('table-investments-body')?.addEventListener('click', (e) => {
+  document.getElementById('panel-investments')?.addEventListener('click', (e) => {
     const target = e.target;
 
+    const expandBtn = target.closest('.btn-expand-history');
+    const deleteBtn = target.closest('.btn-delete-investment');
+    const editBtn = target.closest('.btn-edit-investment');
+
     // Expand history rows toggle
-    if (target.classList.contains('btn-expand-history')) {
-      const asset = target.dataset.asset;
+    if (expandBtn) {
+      const asset = expandBtn.dataset.asset;
       const historyRow = document.getElementById(`history-row-${asset}`);
+      const mobileHistoryRow = document.getElementById(`mobile-history-row-${asset}`);
+      const buttons = document.querySelectorAll(`.btn-expand-history[data-asset="${asset}"]`);
+      
+      let isHidden = true;
       if (historyRow) {
-        const isHidden = historyRow.classList.contains('hidden');
+        isHidden = historyRow.classList.contains('hidden');
         if (isHidden) {
           historyRow.classList.remove('hidden');
-          target.textContent = 'Recolher';
         } else {
           historyRow.classList.add('hidden');
-          target.textContent = 'Detalhes';
         }
       }
+      
+      if (mobileHistoryRow) {
+        isHidden = mobileHistoryRow.classList.contains('hidden');
+        if (isHidden) {
+          mobileHistoryRow.classList.remove('hidden');
+        } else {
+          mobileHistoryRow.classList.add('hidden');
+        }
+      }
+      
+      buttons.forEach(btn => {
+        btn.textContent = isHidden ? 'Recolher' : 'Detalhes';
+      });
     }
 
     // Delete purchase operation
-    if (target.classList.contains('btn-delete-investment')) {
-      const id = target.dataset.id;
+    if (deleteBtn) {
+      const id = deleteBtn.dataset.id;
       if (confirm('Tem certeza que deseja excluir esta compra de ativo?')) {
         store.deleteInvestment(id);
         showToast('Investimento excluído!');
@@ -439,8 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Edit purchase operation
-    if (target.classList.contains('btn-edit-investment')) {
-      const id = target.dataset.id;
+    if (editBtn) {
+      const id = editBtn.dataset.id;
       const inv = store.getInvestments().find(x => x.id === id);
       if (inv) {
         renderer.currentEditInvestmentId = id;
